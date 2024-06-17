@@ -35,7 +35,7 @@ def buy_signal3(prices, drop_threshold=-0.005, stabilization_threshold=0.001, dr
     # Both conditions must be met
     return recent_drops.any() and recent_stabilizations.any()
 
-def buy_signal2(prices, drop_threshold=-0.005, stabilization_period=1):
+def buy_signal4(prices, drop_threshold=-0.005, stabilization_period=1):
     """
     Detects a significant drop in the last 15 minutes, followed by stabilization in the next few minutes.
 
@@ -156,5 +156,42 @@ def sell_signal1(prices, buy_price):
     macd, signal = calculate_macd(prices, short_window=5, long_window=10, signal_window=5)
 
     if rsi > 70 or (macd.iloc[-1] < signal.iloc[-1] and macd.iloc[-2] >= signal.iloc[-2]):
+        return True
+    return False
+
+import pandas as pd
+
+def calculate_bollinger_bands(prices, window=10, num_std_dev=2):
+    
+    prices = pd.Series(prices)
+    middle_band = prices.rolling(window=window, min_periods=5).mean()
+    std_dev = prices.rolling(window=window, min_periods=1).std()
+    upper_band = middle_band + (std_dev * num_std_dev)
+    lower_band = middle_band - (std_dev * num_std_dev)
+    
+    bollinger_bands = pd.DataFrame({
+        'Middle Band': middle_band,
+        'Upper Band': upper_band,
+        'Lower Band': lower_band
+    })
+    return bollinger_bands
+
+def buy_signal2(prices):
+    if len(prices) < 15:
+        return False
+    
+    bollinger_bands = calculate_bollinger_bands(prices)
+    
+    if prices[-1] < bollinger_bands['Lower Band'].iloc[-1]:
+        return True
+    return False
+
+def sell_signal2(prices):
+    if len(prices) < 15:
+        return False
+    
+    bollinger_bands = calculate_bollinger_bands(prices)
+    
+    if prices[-1] > bollinger_bands['Upper Band'].iloc[-1]:
         return True
     return False
